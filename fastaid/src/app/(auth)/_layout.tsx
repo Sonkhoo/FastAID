@@ -1,8 +1,15 @@
+import { AuthProvider } from "@/src/contexts/AuthContext";
 import { Stack } from "expo-router";
-
+import { useAuth } from "@/src/contexts/AuthContext";
 export default function AuthLayout() {
+    const { user } = useAuth();
+    
+    if (user) {
+        return <Stack.Screen name="(user)/index" />;
+    }
+    
   return (
-    <Stack
+         <Stack
       screenOptions={{
         headerShown: false,
         navigationBarHidden: true,

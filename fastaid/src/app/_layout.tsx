@@ -16,7 +16,7 @@ export default function RootLayout() {
   }
 
   return (
-
+      <AuthProvider>
       <ThemeProvider value={DefaultTheme}>
       <Stack
         screenOptions={{
@@ -50,5 +50,6 @@ export default function RootLayout() {
       </Stack>
       <StatusBar barStyle="dark-content" />
     </ThemeProvider>
+    </AuthProvider>
   );
 }

@@ -1,16 +1,39 @@
 import { useState } from "react";
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import supabase from '@/src/lib/supabaseClient';
+import { router } from 'expo-router';
+import { addUser } from '@/src/lib/api/user';
 
 export default function OtpScreen() {
     const { name, phone } = useLocalSearchParams<{ name: string; phone: string }>()
+    const [isLoading, setIsLoading] = useState(false);
     const [otp, setOtp] = useState('');
     const [showOtpInput, setShowOtpInput] = useState(false);
     
-    const handleVerifyOTP = () => {
+    const handleVerifyOTP = async () => {
         console.log('OTP:', otp);
         console.log('Name:', name);
         console.log('Phone:', phone);
+
+        try {
+            setIsLoading(true);
+            const { data: session, error } = await supabase.auth.verifyOtp({
+              phone: phone,
+              token: otp,
+              type: 'sms',
+            })
+            if (error) throw error;
+            console.log('Session:', session);
+          } catch (error) {
+            console.error('Error:', error);
+          } finally {
+            setIsLoading(false);
+          }
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) throw new Error('User not found');
+          await addUser(user.id, name, phone);
+          router.push('/(user)/index');
     };
     
     return (
@@ -39,6 +62,7 @@ export default function OtpScreen() {
                     className="text-center mt-4"
                   >
                     <Text className="text-blue-500">Resend OTP</Text>
+                
                   </TouchableOpacity>
         </View>
         </>

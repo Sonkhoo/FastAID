@@ -8,7 +8,6 @@ import { TextInput } from "react-native";
 import { router } from 'expo-router';
 import supabase from '@/src/lib/supabaseClient';
 import { Text } from "react-native";
-
 export default function SignUp() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -34,10 +33,24 @@ export default function SignUp() {
     }
   };
 
-  const handleContinue = (name: string, phone: string) => {
+  const handleContinue = async (name: string, phone: string) => {
     if (!name || !phone) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
+    }
+    console.log('Phone:', phone);
+    console.log('Name:', name);
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.auth.signInWithOtp({
+        phone: phone,
+      })
+      if (error) throw error;
+      console.log('Data:', data);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsLoading(false);
     }
     // Navigate to OTP screen with user info
     router.push({
