@@ -1,13 +1,12 @@
-import '../../../global.css'
-import { View, Text, ScrollView, TouchableOpacity, Alert} from 'react-native';
+import { router } from 'expo-router';
+import { Clock, Heart, Map, MapPin, Plus, Truck, Users, Zap } from 'lucide-react-native';
+import { useState } from 'react';
+import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Phone,  MapPin, Users,Plus, Zap ,Heart,Truck,Clock, Map, ClockIcon, ZapIcon } from 'lucide-react-native';
-import { useState, useEffect } from 'react';
-import { getNearestAmbulance } from '../../lib/api/maps';
-import { requestLocationPermission, getUserLocation } from '../../lib/services/location';
+import '../../../global.css';
 import { updateUserLocation } from '../../lib/api/location';
-import { getETAForAmbulance } from '../../lib/api/maps';
-import { supabase } from '@/src/lib/supabase';
+import { getETAForAmbulance, getNearestAmbulance } from '../../lib/api/maps';
+import { getUserLocation, requestLocationPermission } from '../../lib/services/location';
 
 interface Ambulance {
   id: any;
@@ -91,7 +90,10 @@ export default function Dashboard() {
           const eta = await getETAForAmbulance({lat: latitude, lng: longitude}, { lat: 22.654885900941647, lng: 88.37130670753086});
   
           // Step 4: Set nearest ambulance
-          setNearestAmbulance(ambulance);
+          setNearestAmbulance(ambulance as unknown as Ambulance);
+
+          // Step 5: Navigate to the map page
+          router.push('/map');
         } catch (error) {
           console.error('Error initializing dashboard:', error);
           Alert.alert('Error', 'Something went wrong. Please try again later.');

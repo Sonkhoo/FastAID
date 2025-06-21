@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
-import { supabase } from '../lib/supabase';
 import { getNearestAmbulance, getRouteToAmbulance, RouteCoordinate } from '../lib/api/maps';
 import { getUserLocation } from '../lib/services/location';
+import { supabase } from '../lib/supabase';
 
 interface Coordinate {
     latitude: number;
@@ -38,7 +38,7 @@ const MapContainer = ({ latitude, longitude }: MapContainerProps) => {
             try {
                 const ambulance = await getNearestAmbulance(latitude, longitude);
                 if (ambulance) {
-                    setNearestAmbulance(ambulance);
+                    setNearestAmbulance(ambulance as unknown as Ambulance);
                 
                     // Fetch route when we have both user location and ambulance location
                     const userLocation= await getUserLocation(true);

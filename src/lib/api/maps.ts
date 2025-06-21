@@ -129,8 +129,8 @@ export const getETAForAmbulance = async (userLocation: { lat: number, lng: numbe
         
         console.log('ETA for ambulance:', element);
         return {
-            duration: element.duration?.value || 0, // Duration in seconds
-            distance: element.distance?.value || 0, // Distance in meters
+            duration: element.duration, // Duration in seconds
+            distance: element.distance, // Distance in meters
             status: element.status
         };
     } catch (error) {
