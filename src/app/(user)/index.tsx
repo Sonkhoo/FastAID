@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
-import { Clock, Heart, Map, MapPin, Plus, Truck, Users, Zap } from 'lucide-react-native';
+import { Clock, Heart, LogOut, Map, MapPin, Plus, Truck, Users, Zap } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import '../../../global.css';
+import { useAuth } from '../../contexts/AuthContext';
 import { updateUserLocation } from '../../lib/api/location';
 import { getETAForAmbulance, getNearestAmbulance } from '../../lib/api/maps';
 import { getUserLocation, requestLocationPermission } from '../../lib/services/location';
@@ -32,6 +33,7 @@ const quickActions = [
 ];
   
 export default function Dashboard() {
+    const { signOut } = useAuth();
     const [nearestAmbulance, setNearestAmbulance] = useState<Ambulance | null>(null);
     const recentBookings = [
         {
@@ -51,6 +53,19 @@ export default function Dashboard() {
         statusColor: 'text-secondary-600'
         },
     ];
+
+    const handleLogout = async () => {
+      try {
+        await signOut();
+        // src\app\(auth)\index.tsx
+        // src\app\(user)\index.tsx
+        router.replace('./(auth)/');
+        // The AuthProvider will automatically handle the navigation
+      } catch (error) {
+        Alert.alert('Error', 'Failed to logout. Please try again.');
+      }
+    };
+
     /*
       0. check if user is logged in(skip for now)
       1. check if user already in the supabase user table
@@ -105,10 +120,13 @@ export default function Dashboard() {
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View className="bg-red-500 py-4 border-b border-gray-200">
-            <View className="flex-row items-center justify-center ">
+            <View className="flex-row items-center justify-between px-6">
               <View>
-                <Text className="text-3xl font-bold text-white text-center">FastAID</Text>
+                <Text className="text-3xl font-bold text-white">FastAID</Text>
               </View>
+              <TouchableOpacity onPress={handleLogout} className="p-2">
+                <LogOut color="white" size={24} />
+              </TouchableOpacity>
             </View>
           </View>
   

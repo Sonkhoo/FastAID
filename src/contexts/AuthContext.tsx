@@ -1,79 +1,114 @@
+import { Session } from '@supabase/supabase-js';
 import React, {
   createContext,
   useContext,
-  useState,
   useEffect,
-  ReactNode,
+  useState
 } from 'react';
-import { supabase } from './../lib/supabase';
-import { Session } from '@supabase/supabase-js';
-import { router } from 'expo-router';
+import { getCurrentUserProfile } from '../lib/api/user';
+import { supabase } from '../lib/supabase';
+
+interface User {
+  id: string;
+  phoneNumber: string;
+  name: string;
+  email?: string;
+  latitude?: number;
+  longitude?: number;
+}
 
 interface AuthContextType {
   session: Session | null;
-  phone: string;
-  isLoading: boolean;
-  loginWithOtp: (phone: string) => Promise<void>;
-  verifyOtp: (phone: string, token: string) => Promise<void>;
-  logout: () => void;
+  user: User | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [phone, setPhone] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setIsLoading(false);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) router.replace('/(user)');
-      else router.replace('/(auth)/SignUp');
-    });
-
-    return () => {
-      listener?.subscription.unsubscribe();
-    };
-  }, []);
-
-  const loginWithOtp = async (phone: string) => {
-    console.log('login with otp', phone);
-    const { error } = await supabase.auth.signInWithOtp({ phone });
-    if (error) throw error;
-    setPhone(phone);
-  };
-
-  const verifyOtp = async (phone: string, token: string) => {
-    const { error } = await supabase.auth.verifyOtp({
-      phone,
-      token,
-      type: 'sms',
-    });
-    if (error) throw error;
-  };
-
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-  };
-
-  return (
-    <AuthContext.Provider value={{ session, phone, loginWithOtp, verifyOtp, logout, isLoading }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const checkUserInDatabase = async () => {
+    try {
+      console.log('Checking user in database...');
+      const userData = await getCurrentUserProfile();
+      console.log('User data from database:', userData);
+      setUser(userData);
+    } catch (error) {
+      console.error('Error checking user in database:', error);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshUser = async () => {
+    if (session) {
+      console.log('Refreshing user data...');
+      await checkUserInDatabase();
+    }
+  };
+
+  useEffect(() => {
+    console.log('AuthProvider: Initializing...');
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('AuthProvider: Initial session:', session ? 'exists' : 'none');
+      setSession(session);
+      if (session) {
+        checkUserInDatabase();
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('AuthProvider: Auth state change:', event, session ? 'session exists' : 'no session');
+      setSession(session);
+      if (session) {
+        await checkUserInDatabase();
+      } else {
+        setUser(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+      }
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  const value = {
+    session,
+    user,
+    loading,
+    signOut,
+    refreshUser,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
