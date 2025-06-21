@@ -170,6 +170,14 @@ export default function Dashboard() {
                 <TouchableOpacity 
                   key={index} 
                   className="bg-white p-4 rounded-xl w-[48%] mb-4 shadow-sm"
+                  onPress={() => {
+                    if (action.title === 'Emergency Booking') {
+                      handleEmergencyPress();
+                    } else if (action.title === 'Find Hospital') {
+                      router.push('/map');
+                    }
+                    // Add other actions as needed
+                  }}
                 >
                   <View className={`w-12 h-12 ${action.color} rounded-full items-center justify-center mb-3`}>
                     <action.icon size={24} color="white" />

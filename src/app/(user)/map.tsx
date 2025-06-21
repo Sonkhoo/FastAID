@@ -1,9 +1,7 @@
 import {
-  Filter,
-  Hospital,
+  Hospital as HospitalIcon,
   MapPin,
   Navigation,
-  Search,
   Truck
 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
@@ -17,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapContainer from '../../components/Map';
-import { getETAForAmbulance, getNearestAmbulance } from '../../lib/api/maps';
+import { getETAForAmbulance, getNearestAmbulance, getNearestHospital, type Hospital } from '../../lib/api/maps';
 import { getUserLocation } from '../../lib/services/location';
 
 // TypeScript interfaces
@@ -42,7 +40,9 @@ export default function MapScreen() {
 
   // State for nearby ambulances
   const [nearbyAmbulances, setNearbyAmbulances] = useState<AmbulanceData[]>([]);
+  const [nearbyHospitals, setNearbyHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hospitalsLoading, setHospitalsLoading] = useState(false);
 
   // Fetch user location and nearest ambulance on component mount
   useEffect(() => {
@@ -106,11 +106,28 @@ export default function MapScreen() {
     fetchLocationAndAmbulance();
   }, []);
 
-  const nearbyHospitals = [
-    { id: 1, name: 'City General Hospital', distance: '2.3 km', speciality: 'Emergency Care' },
-    { id: 2, name: 'Metro Medical Center', distance: '3.1 km', speciality: 'Trauma Center' },
-    { id: 3, name: 'Downtown Clinic', distance: '1.8 km', speciality: 'Urgent Care' },
-  ];
+  // Function to fetch nearby hospitals
+  const fetchNearbyHospitals = async () => {
+    try {
+      setHospitalsLoading(true);
+      const hospitals = await getNearestHospital(
+        defaultLocation.latitude,
+        defaultLocation.longitude
+      );
+      setNearbyHospitals(hospitals);
+      console.log('Fetched hospitals:', hospitals);
+    } catch (error) {
+      console.error('Error fetching nearby hospitals:', error);
+      setNearbyHospitals([]);
+    } finally {
+      setHospitalsLoading(false);
+    }
+  };
+
+  // Fetch hospitals on component mount
+  useEffect(() => {
+    fetchNearbyHospitals();
+  }, [defaultLocation]);
 
   const styles = StyleSheet.create({
     container: {
@@ -131,7 +148,7 @@ export default function MapScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
-      {/* Header */}
+      {/* Header
       <View className="bg-white px-6 py-4 border-b border-gray-200">
         <View className="flex-row items-center justify-between">
           <Text className="text-2xl font-bold text-gray-900">Live Map</Text>
@@ -144,7 +161,7 @@ export default function MapScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </View> */}
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Map Container */}
@@ -170,7 +187,7 @@ export default function MapScreen() {
           
           {/* Hospital marker */}
           <View className="absolute top-1/3 right-1/3 bg-secondary-500 p-2 rounded-full">
-            <Hospital color="white" size={16} />
+            <HospitalIcon color="white" size={16} />
           </View>
         </View>
 
@@ -232,24 +249,54 @@ export default function MapScreen() {
 
         {/* Nearby Hospitals */}
         <View className="px-6 mt-6 mb-6">
-          <Text className="text-lg font-bold text-gray-900 mb-4">Nearby Hospitals</Text>
-          {nearbyHospitals.map((hospital) => (
-            <View key={hospital.id} className="bg-white p-4 rounded-xl mb-3 shadow-sm">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-1">
-                  <Text className="font-bold text-gray-900 mb-1">{hospital.name}</Text>
-                  <Text className="text-gray-600 text-sm mb-1">{hospital.speciality}</Text>
-                  <View className="flex-row items-center">
-                    <MapPin color="#6B7280" size={16} />
-                    <Text className="text-gray-600 text-sm ml-1">{hospital.distance} away</Text>
-                  </View>
-                </View>
-                <TouchableOpacity className="bg-secondary-500 px-4 py-2 rounded-full">
-                  <Text className="text-white font-semibold">Directions</Text>
-                </TouchableOpacity>
-              </View>
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-lg font-bold text-gray-900">Nearby Hospitals</Text>
+            <TouchableOpacity 
+              onPress={fetchNearbyHospitals}
+              disabled={hospitalsLoading}
+              className="bg-blue-500 px-3 py-1 rounded-full"
+            >
+              <Text className="text-white text-sm font-semibold">
+                {hospitalsLoading ? 'Loading...' : 'Refresh'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          {hospitalsLoading ? (
+            <View className="bg-white p-4 rounded-xl mb-3 shadow-sm">
+              <Text className="text-gray-600 text-center">Loading hospitals...</Text>
             </View>
-          ))}
+          ) : nearbyHospitals.length > 0 ? (
+            nearbyHospitals.map((hospital) => (
+              <View key={hospital.id} className="bg-white p-4 rounded-xl mb-3 shadow-sm">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-1">
+                    <Text className="font-bold text-gray-900 mb-1">{hospital.name}</Text>
+                    <Text className="text-gray-600 text-sm mb-1">{hospital.speciality}</Text>
+                    <View className="flex-row items-center mb-1">
+                      <MapPin color="#6B7280" size={16} />
+                      <Text className="text-gray-600 text-sm ml-1">{hospital.distanceText} away</Text>
+                    </View>
+                    {hospital.emergency && (
+                      <View className="bg-red-100 px-2 py-1 rounded-full self-start">
+                        <Text className="text-red-600 text-xs font-semibold">Emergency</Text>
+                      </View>
+                    )}
+                    {hospital.phone && (
+                      <Text className="text-gray-500 text-xs mt-1">📞 {hospital.phone}</Text>
+                    )}
+                  </View>
+                  <TouchableOpacity className="bg-secondary-500 px-4 py-2 rounded-full">
+                    <Text className="text-white font-semibold">Directions</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          ) : (
+            <View className="bg-white p-4 rounded-xl mb-3 shadow-sm">
+              <Text className="text-gray-600 text-center">No hospitals found nearby</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

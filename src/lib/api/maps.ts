@@ -7,6 +7,26 @@
 */
 import axios from 'axios';
 import { supabase } from '../supabase';
+
+// Interface for hospital data
+export interface Hospital {
+    id: number;
+    type: string;
+    name: string;
+    amenity: string;
+    distance: number;
+    distanceText: string;
+    location: {
+        latitude: number;
+        longitude: number;
+    };
+    address: string;
+    phone: string;
+    website: string;
+    emergency: boolean;
+    speciality: string;
+}
+
 export const getNearestAmbulance = async (latitude: number, longitude: number) => {
     console.log('Getting nearest ambulance...', latitude, longitude);
 
@@ -39,20 +59,131 @@ export const getNearestAmbulance = async (latitude: number, longitude: number) =
     };
 };
 
-export const getNearestHospital = async (latitude: number, longitude: number) => {
-    const {data, error} = await supabase.rpc('nearby_hospital', {
-        latitude_param: latitude,
-        longitude_param: longitude
-        });
-  
-        if (error) {
-          console.error('Error getting nearest hospital:', error);
-          return;
-        }
-        console.log('Nearest hospital:', data[0]);
-        return data[0];
-}
+export const getNearestHospital = async (latitude: number, longitude: number): Promise<Hospital[]> => {
+    try {
+        console.log('Fetching nearby hospitals...', latitude, longitude);
+        
+        const query = `
+[out:json];
+(
+  node["amenity"="hospital"](around:2000,${latitude},${longitude});
+  way["amenity"="hospital"](around:2000,${latitude},${longitude});
+  relation["amenity"="hospital"](around:2000,${latitude},${longitude});
 
+  node["amenity"="clinic"](around:2000,${latitude},${longitude});
+  way["amenity"="clinic"](around:2000,${latitude},${longitude});
+  relation["amenity"="clinic"](around:2000,${latitude},${longitude});
+
+  node["amenity"="pharmacy"](around:2000,${latitude},${longitude});
+  way["amenity"="pharmacy"](around:2000,${latitude},${longitude});
+  relation["amenity"="pharmacy"](around:2000,${latitude},${longitude});
+);
+out center;`;
+
+        const response = await fetch("https://overpass-api.de/api/interpreter", {
+            method: "POST",
+            body: query,
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Overpass API response:', data);
+
+        if (!data.elements || data.elements.length === 0) {
+            console.log('No hospitals found nearby');
+            return [];
+        }
+
+        // Process and format the hospital data
+        const hospitals = data.elements.map((element: any) => {
+            // Calculate distance from user location
+            let hospitalLat, hospitalLon;
+            
+            if (element.type === 'node') {
+                hospitalLat = element.lat;
+                hospitalLon = element.lon;
+            } else if (element.center) {
+                hospitalLat = element.center.lat;
+                hospitalLon = element.center.lon;
+            } else {
+                // Skip elements without coordinates
+                return null;
+            }
+
+            // Calculate distance using Haversine formula
+            const distance = calculateDistance(latitude, longitude, hospitalLat, hospitalLon);
+            
+            return {
+                id: element.id,
+                type: element.type,
+                name: element.tags?.name || 'Unknown Hospital',
+                amenity: element.tags?.amenity || 'hospital',
+                distance: distance,
+                distanceText: formatDistance(distance),
+                location: {
+                    latitude: hospitalLat,
+                    longitude: hospitalLon
+                },
+                address: element.tags?.['addr:street'] || '',
+                phone: element.tags?.phone || '',
+                website: element.tags?.website || '',
+                emergency: element.tags?.emergency === 'yes',
+                speciality: getSpecialityFromTags(element.tags)
+            };
+        }).filter(Boolean) as Hospital[]; // Remove null elements and type as Hospital[]
+
+        // Sort by distance and return the nearest ones
+        hospitals.sort((a: Hospital, b: Hospital) => a.distance - b.distance);
+        
+        console.log('Processed hospitals:', hospitals);
+        return hospitals.slice(0, 4); // Return top 4r nearest
+
+    } catch (error) {
+        console.error('Error fetching nearby hospitals:', error);
+        return [];
+    }
+};
+
+// Helper function to calculate distance between two points using Haversine formula
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c; // Distance in kilometers
+    return distance;
+};
+
+// Helper function to format distance
+const formatDistance = (distance: number): string => {
+    if (distance < 1) {
+        return `${Math.round(distance * 1000)}m`;
+    } else {
+        return `${distance.toFixed(1)}km`;
+    }
+};
+
+// Helper function to determine speciality from tags
+const getSpecialityFromTags = (tags: any): string => {
+    if (tags?.emergency === 'yes') {
+        return 'Emergency Care';
+    } else if (tags?.amenity === 'clinic') {
+        return 'General Clinic';
+    } else if (tags?.amenity === 'pharmacy') {
+        return 'Pharmacy';
+    } else if (tags?.healthcare) {
+        return tags.healthcare;
+    } else {
+        return 'General Hospital';
+    }
+};
 
 export interface RouteCoordinate {
     latitude: number;
