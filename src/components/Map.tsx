@@ -78,8 +78,8 @@ const MapContainer = ({ latitude, longitude }: MapContainerProps) => {
                     table: 'driver',
                 },
                 (payload: any) => {
-                    // When a driver's location updates, refetch the nearest ambulance
-                    console.log('Driver location updated:', payload);
+                    // When a driver's location or availability updates, refetch the nearest ambulance
+                    console.log('Driver data updated:', payload);
                     fetchNearestAmbulanceData();
                 }
             )

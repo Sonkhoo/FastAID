@@ -28,6 +28,8 @@ interface AmbulanceData {
     latitude: number;
     longitude: number;
   };
+  phoneNumber: string;
+  driverLicense: string;
 }
 
 export default function MapScreen() {
@@ -91,7 +93,9 @@ export default function MapScreen() {
             eta: etaText,
             status: 'Available',
             driver: ambulance.name,
-            location: ambulance.location
+            location: ambulance.location,
+            phoneNumber: ambulance.phoneNumber,
+            driverLicense: ambulance.driverLicense
           };
           setNearbyAmbulances([ambulanceData]);
         } else {
@@ -107,6 +111,55 @@ export default function MapScreen() {
 
     fetchLocationAndAmbulance();
   }, []);
+
+  // Function to refresh ambulance list
+  const refreshAmbulanceList = async () => {
+    try {
+      setLoading(true);
+      const userLocation = await getUserLocation(true);
+      const ambulance = await getNearestAmbulance(
+        userLocation?.latitude || defaultLocation.latitude, 
+        userLocation?.longitude || defaultLocation.longitude
+      );
+      
+      if (ambulance) {
+        let etaText = 'Calculating...';
+        try {
+          const etaData = await getETAForAmbulance(
+            { lat: userLocation?.latitude || defaultLocation.latitude, lng: userLocation?.longitude || defaultLocation.longitude },
+            { lat: ambulance.location.latitude, lng: ambulance.location.longitude }
+          );
+          
+          if (etaData && etaData.duration) {
+            const minutes = Math.ceil(etaData.duration / 60);
+            etaText = `${minutes} min`;
+          }
+        } catch (etaError) {
+          console.error('Error calculating ETA:', etaError);
+          etaText = 'N/A';
+        }
+
+        const ambulanceData: AmbulanceData = {
+          id: ambulance.id,
+          distance: `${(ambulance.distance / 1000).toFixed(1)} km`,
+          eta: etaText,
+          status: 'Available',
+          driver: ambulance.name,
+          location: ambulance.location,
+          phoneNumber: ambulance.phoneNumber,
+          driverLicense: ambulance.driverLicense
+        };
+        setNearbyAmbulances([ambulanceData]);
+      } else {
+        setNearbyAmbulances([]);
+      }
+    } catch (error) {
+      console.error('Error refreshing ambulance list:', error);
+      setNearbyAmbulances([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Function to fetch nearby hospitals
   const fetchNearbyHospitals = async () => {
@@ -314,10 +367,10 @@ export default function MapScreen() {
           driver={{
             id: nearbyAmbulances[0].id,
             name: nearbyAmbulances[0].driver,
-            phone: "+1234567890",
+            phone: nearbyAmbulances[0].phoneNumber,
             rating: 4.8,
             experience: "5 years",
-            vehicleNumber: "AMB001",
+            driverLicense: nearbyAmbulances[0].driverLicense,
             vehicleType: "Ambulance"
           }}
           hospital={{
@@ -333,7 +386,8 @@ export default function MapScreen() {
           estimatedCost="$45.00"
           onConfirmBooking={() => {
             console.log('Booking confirmed');
-            // Add booking logic here
+            // Refresh ambulance list to show only available drivers
+            refreshAmbulanceList();
           }}
           onCancel={() => {
             console.log('Booking cancelled');

@@ -30,7 +30,7 @@ export interface Hospital {
 export const getNearestAmbulance = async (latitude: number, longitude: number) => {
     console.log('Getting nearest ambulance...', latitude, longitude);
 
-    let { data, error } = await supabase.rpc('nearby_ambulance', {
+    let { data, error } = await supabase.rpc('nearby_available_ambulance', {
         latitude_param: latitude,
         longitude_param: longitude
     });
@@ -51,6 +51,8 @@ export const getNearestAmbulance = async (latitude: number, longitude: number) =
     return {
         id: nearestAmbulance.id,
         name: nearestAmbulance.name,
+        phoneNumber: nearestAmbulance.phoneNumber,
+        driverLicense: nearestAmbulance.driverLicense,
         location: {
             latitude: nearestAmbulance.lat,
             longitude: nearestAmbulance.long

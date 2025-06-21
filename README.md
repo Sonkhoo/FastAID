@@ -48,7 +48,14 @@ FastAid is a React Native mobile application built with Expo that connects users
    EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
    EXPO_PUBLIC_SUPABASE_API_KEY=your_supabase_anon_key
    EXPO_PUBLIC_OLA_API_KEY=your_ola_maps_api_key
+   EXPO_PUBLIC_RAZORPAY_API_KEY=your_razorpay_api_key
    ```
+
+   **Note**: For Razorpay integration:
+   - Get your API keys from [Razorpay Dashboard](https://dashboard.razorpay.com/)
+   - Use test keys for development (`rzp_test_...`)
+   - Use live keys for production (`rzp_live_...`)
+   - The app includes fallback payment simulation for development
 
 4. **Database Setup**
    Run the following SQL in your Supabase SQL Editor:
@@ -149,6 +156,23 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For support, email support@fastaid.com or create an issue in this repository.
+
+## Troubleshooting
+
+### Payment Gateway Issues
+
+If you encounter the error `Cannot read property 'open' of null` during payment:
+
+1. **Check Razorpay API Key**: Ensure `EXPO_PUBLIC_RAZORPAY_API_KEY` is properly set in your `.env` file
+2. **Verify API Key Format**: The key should start with `rzp_test_` (development) or `rzp_live_` (production)
+3. **Development Mode**: In development, the app uses a payment simulation. For real payments, build with `expo run:android` or `expo run:ios`
+4. **Module Installation**: Ensure `react-native-razorpay` is properly installed: `npm install react-native-razorpay`
+
+### Common Issues
+
+- **Location Services**: Ensure location permissions are granted on the device
+- **Network Connectivity**: Check internet connection for real-time features
+- **Supabase Connection**: Verify Supabase URL and API key configuration
 
 ## Acknowledgments
 
