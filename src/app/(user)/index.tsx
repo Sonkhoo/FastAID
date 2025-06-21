@@ -1,13 +1,15 @@
 import { router } from 'expo-router';
-import { Clock, Heart, LogOut, Map, MapPin, Plus, Truck, Users, Zap } from 'lucide-react-native';
-import { useState } from 'react';
-import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Clock, Heart, LogOut, Map, Truck, Users, Zap } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { Alert, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import '../../../global.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateUserLocation } from '../../lib/api/location';
 import { getETAForAmbulance, getNearestAmbulance } from '../../lib/api/maps';
+import { getAllBookingStatuses, getDashboardStats, type DashboardStats } from '../../lib/api/stats';
 import { getUserLocation, requestLocationPermission } from '../../lib/services/location';
+import { supabase } from '../../lib/supabase';
 
 interface Ambulance {
   id: any;
@@ -33,8 +35,16 @@ const quickActions = [
 ];
   
 export default function Dashboard() {
-    const { signOut } = useAuth();
+    const { signOut, user } = useAuth();
     const [nearestAmbulance, setNearestAmbulance] = useState<Ambulance | null>(null);
+    const [stats, setStats] = useState<DashboardStats>({
+      availableAmbulances: 0,
+      activeBookings: 0,
+      averageResponseTime: '4.2 min'
+    });
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+
     const recentBookings = [
         {
         id: '1',
@@ -53,6 +63,86 @@ export default function Dashboard() {
         statusColor: 'text-secondary-600'
         },
     ];
+
+    // Fetch dashboard stats
+    const fetchDashboardStats = async () => {
+      try {
+        setLoading(true);
+        
+        // Debug: Get all booking statuses
+        await getAllBookingStatuses();
+        
+        const dashboardStats = await getDashboardStats(user?.id);
+        setStats(dashboardStats);
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Fetch stats on component mount
+    useEffect(() => {
+      fetchDashboardStats();
+    }, [user?.id]);
+
+    // Refresh stats every 30 seconds
+    useEffect(() => {
+      const interval = setInterval(fetchDashboardStats, 30000);
+      return () => clearInterval(interval);
+    }, [user?.id]);
+
+    // Set up real-time subscriptions for live updates
+    useEffect(() => {
+      if (!user?.id) return;
+
+      // Subscribe to booking changes
+      const bookingChannel = supabase
+        .channel('dashboard_bookings')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'Booking',
+            filter: `userId=eq.${user.id}`,
+          },
+          () => {
+            console.log('Booking changed, updating dashboard stats');
+            fetchDashboardStats();
+          }
+        )
+        .subscribe();
+
+      // Subscribe to driver availability changes
+      const driverChannel = supabase
+        .channel('dashboard_drivers')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'Driver',
+          },
+          () => {
+            console.log('Driver changed, updating dashboard stats');
+            fetchDashboardStats();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(bookingChannel);
+        supabase.removeChannel(driverChannel);
+      };
+    }, [user?.id]);
+
+    // Handle pull-to-refresh
+    const onRefresh = async () => {
+      setRefreshing(true);
+      await fetchDashboardStats();
+      setRefreshing(false);
+    };
 
     const handleLogout = async () => {
       try {
@@ -109,6 +199,11 @@ export default function Dashboard() {
 
           // Step 5: Navigate to the map page
           router.push('/map');
+          
+          // Refresh dashboard stats after a short delay to reflect any changes
+          setTimeout(() => {
+            fetchDashboardStats();
+          }, 2000);
         } catch (error) {
           console.error('Error initializing dashboard:', error);
           Alert.alert('Error', 'Something went wrong. Please try again later.');
@@ -117,7 +212,7 @@ export default function Dashboard() {
 
     return (
       <SafeAreaView className="flex-1 bg-gray-50">
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl onRefresh={onRefresh} refreshing={refreshing} />}>
           {/* Header */}
           <View className="bg-red-500 py-4 border-b border-gray-200">
             <View className="flex-row items-center justify-between px-6">
@@ -139,9 +234,9 @@ export default function Dashboard() {
                 <View className="flex-row items-center justify-center">
                 <TouchableOpacity 
                   onPress={handleEmergencyPress}
-                  className="bg-red-600 px-6 py-3 rounded-full self-start mt-4 justify-center items-center align-center"
+                  className="bg-red-600 px-8 py-4 rounded-full self-start mt-4 justify-center items-center align-center"
                 >
-                  <Text className="text-white font-bold text-center">Call Ambulance</Text>
+                  <Text className="text-white font-bold text-center text-lg">Call Ambulance</Text>
                 </TouchableOpacity>
                 </View>
               </View>
@@ -150,15 +245,37 @@ export default function Dashboard() {
   
           {/* Stats Cards */}
           <View className="px-6 mt-6">
-            <Text className="text-lg font-bold text-gray-900 mb-4">Live Statistics</Text>
-            <View className="flex-row justify-between">
-              {emergencyStats.map((stat, index) => (
-                <View key={index} className="bg-white p-4 rounded-xl flex-1 mx-1 shadow-sm">
-                  <stat.icon color="#DC2626" size={24} />
-                  <Text className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</Text>
-                  <Text className="text-gray-600 text-sm mt-1">{stat.title}</Text>
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-lg font-bold text-gray-900">Live Statistics</Text>
+              {loading && (
+                <View className="flex-row items-center">
+                  <View className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2" />
+                  <Text className="text-xs text-gray-500">Updating...</Text>
                 </View>
-              ))}
+              )}
+            </View>
+            <View className="flex-row justify-between">
+              <View className="bg-white p-4 rounded-xl flex-1 mx-1 shadow-sm">
+                <Truck color="#DC2626" size={24} />
+                <Text className="text-2xl font-bold text-gray-900 mt-2">
+                  {loading ? '...' : stats.availableAmbulances}
+                </Text>
+                <Text className="text-gray-600 text-sm mt-1">Available Ambulances</Text>
+              </View>
+              <View className="bg-white p-4 rounded-xl flex-1 mx-1 shadow-sm">
+                <Clock color="#DC2626" size={24} />
+                <Text className="text-2xl font-bold text-gray-900 mt-2">
+                  {loading ? '...' : stats.averageResponseTime}
+                </Text>
+                <Text className="text-gray-600 text-sm mt-1">Response Time</Text>
+              </View>
+              <View className="bg-white p-4 rounded-xl flex-1 mx-1 shadow-sm">
+                <Users color="#DC2626" size={24} />
+                <Text className="text-2xl font-bold text-gray-900 mt-2">
+                  {loading ? '...' : stats.activeBookings}
+                </Text>
+                <Text className="text-gray-600 text-sm mt-1">Active Bookings</Text>
+              </View>
             </View>
           </View>
   
@@ -187,37 +304,6 @@ export default function Dashboard() {
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
-  
-          {/* Recent Bookings */}
-          <View className="px-6 mt-6 mb-6">
-            <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-lg font-bold text-gray-900">Recent Bookings</Text>
-              <TouchableOpacity>
-                <Text className="text-primary-600 font-semibold">View All</Text>
-              </TouchableOpacity>
-            </View>
-            
-            {recentBookings.map((booking) => (
-              <View key={booking.id} className="bg-white p-4 rounded-xl mb-3 shadow-sm">
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-1">
-                    <View className="flex-row items-center mb-1">
-                      <Text className="font-bold text-gray-900 mr-2">{booking.type}</Text>
-                      <Text className={`font-semibold ${booking.statusColor}`}>{booking.status}</Text>
-                    </View>
-                    <Text className="text-gray-600 text-sm mb-1">{booking.date}</Text>
-                    <View className="flex-row items-center">
-                      <MapPin color="#6B7280" size={16} />
-                      <Text className="text-gray-600 text-sm ml-1">{booking.location}</Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity className="bg-gray-100 p-2 rounded-full">
-                    <Plus color="#6B7280" size={20} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
           </View>
         </ScrollView>
       </SafeAreaView>

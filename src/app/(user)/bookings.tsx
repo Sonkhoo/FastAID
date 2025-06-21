@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Clock,
   Filter,
-  MapPin,
   Plus,
   Search,
   User
@@ -388,13 +387,13 @@ export default function Bookings() {
                         <Text className="text-gray-700 ml-2">{booking.date} at {booking.time}</Text>
                       </View>
                       
-                      <View className="flex-row items-start">
-                        <MapPin size={16} color="#6b7280" className="mt-0.5" />
-                        <View className="ml-2 flex-1">
+                      {/* <View className="flex-row items-start"> */}
+                        {/* <MapPin size={16} color="#6b7280" className="mt-0.5" />
+                        {/* <View className="ml-2 flex-1">
                           <Text className="text-gray-700 text-sm">From: {booking.pickup}</Text>
                           <Text className="text-gray-700 text-sm">To: {booking.destination}</Text>
-                        </View>
-                      </View>
+                        </View> */} 
+                      {/* </View> */}
                     </View>
 
                     <View className="flex-row items-center justify-between mt-4 pt-3 border-t border-gray-100">
@@ -413,7 +412,7 @@ export default function Bookings() {
           )}
         </View>
 
-        {/* New Booking Button */}
+        {/* New Booking Button
         <View className="px-6 mb-8">
           <TouchableOpacity 
             className="bg-emergency-600 rounded-xl p-4 flex-row items-center justify-center"
@@ -422,7 +421,7 @@ export default function Bookings() {
             <Plus size={24} color="#ffffff" />
             <Text className="text-white font-semibold text-lg ml-2">Book New Ambulance</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
       </ScrollView>
     </View>
   );
