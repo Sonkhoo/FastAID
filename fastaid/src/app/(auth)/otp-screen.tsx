@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import supabase from '@/src/lib/supabaseClient';
+import { supabase } from '@/src/lib/supabase';
 import { router } from 'expo-router';
 import { addUser } from '@/src/lib/api/user';
 
@@ -12,28 +12,44 @@ export default function OtpScreen() {
     const [showOtpInput, setShowOtpInput] = useState(false);
     
     const handleVerifyOTP = async () => {
-        console.log('OTP:', otp);
-        console.log('Name:', name);
-        console.log('Phone:', phone);
+        if (!otp || otp.length < 6) {
+            Alert.alert('Error', 'Please enter a valid OTP');
+            return;
+        }
 
         try {
             setIsLoading(true);
-            const { data: session, error } = await supabase.auth.verifyOtp({
-              phone: phone,
-              token: otp,
-              type: 'sms',
-            })
+            
+            // Verify the OTP
+            const { data: { session }, error } = await supabase.auth.verifyOtp({
+                phone: phone,
+                token: otp,
+                type: 'sms',
+            });
+
             if (error) throw error;
-            console.log('Session:', session);
-          } catch (error) {
+            
+            if (session) {
+                // Get the user from the session
+                const { data: { user } } = await supabase.auth.getUser();
+                
+                if (!user) {
+                    throw new Error('User not found after OTP verification');
+                }
+                
+                // Add user to your database
+                await addUser(user.id, name, phone);
+                
+                // Only navigate after successful verification and user creation
+                router.replace('../(user)/index');
+            }
+        } catch (error) {
             console.error('Error:', error);
-          } finally {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to verify OTP';
+            Alert.alert('Error', errorMessage);
+        } finally {
             setIsLoading(false);
-          }
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) throw new Error('User not found');
-          await addUser(user.id, name, phone);
-          router.push('/(user)/index');
+        }
     };
     
     return (

@@ -1,23 +1,30 @@
-import { AuthProvider } from "@/src/contexts/AuthContext";
-import { Stack } from "expo-router";
-import { useAuth } from "@/src/contexts/AuthContext";
+import { Redirect, Stack } from "expo-router";
+import { useAuth } from "../../contexts/AuthContext";
+import { useEffect, useState } from "react";
 export default function AuthLayout() {
-    const { user } = useAuth();
-    
-    if (user) {
-        return <Stack.Screen name="(user)/index" />;
+
+    const [isLoading, setIsLoading] = useState(true);
+    const { session } = useAuth();
+    console.log('session at auth layout',session)
+    useEffect(() => {
+        if (session && session.user) {
+            setIsLoading(false);
+        }
+    }, [session]);
+    if (isLoading) {
+        return null;
     }
-    
+    if (session) {
+        return <Redirect href="/(user)" />;
+    }
   return (
-         <Stack
+    <Stack
       screenOptions={{
         headerShown: false,
         navigationBarHidden: true,
       }}
+      initialRouteName="SignUp"
     >
-      <Stack.Screen name="SignUp" />
-      <Stack.Screen name="SignIn" />
-      <Stack.Screen name="OtpScreen" />
-    </Stack>
-  );
+   </Stack>
+);
 }

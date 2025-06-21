@@ -39,17 +39,17 @@ export default function RootLayout() {
             navigationBarHidden: true,
           }}
         />
-        <Stack.Screen
+        {/* <Stack.Screen
           name="(driver)"
           options={{
             headerShown: false,
             navigationBarHidden: true,
           }}
-        />
+        /> */}
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar barStyle="dark-content" />
     </ThemeProvider>
     </AuthProvider>
-  );
+   );
 }

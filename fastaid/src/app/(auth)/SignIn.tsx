@@ -5,7 +5,7 @@ import { Text, TextInput, TouchableOpacity, View } from "react-native";
 export default function SignIn() {
     const [isLoading, setIsLoading] = useState(false);
     const [name, setName] = useState('');
-    const [phone, setPhone] = useState('');
+    const [inputPhone, setPhone] = useState('');
 
     const handleGoogleSignIn = () => {
         
@@ -13,7 +13,7 @@ export default function SignIn() {
 
     const handleContinue = () => {
         console.log('Name:', name);
-        console.log('Phone:', phone);
+        console.log('Phone:', inputPhone);
     }
 
   return (
@@ -40,7 +40,7 @@ export default function SignIn() {
 
       <TextInput
         placeholder="Phone Number"
-        value={phone}
+        value={inputPhone}
         onChangeText={setPhone}
         keyboardType="phone-pad"
         className="border w-full border-gray-300 rounded-lg px-4 py-3 mb-6"
@@ -52,7 +52,11 @@ export default function SignIn() {
       >
         <Text className="text-white text-lg font-semibold text-center">Continue</Text>
       </TouchableOpacity>
-    </View>
-  );
-};
-    
+
+      <TouchableOpacity 
+        onPress={() => router.push('/(auth)/SignUp')}>
+        <Text className="text-blue-500 text-lg font-semibold text-center">Sign Up</Text>
+      </TouchableOpacity>
+   </View>
+);
+}

@@ -6,51 +6,38 @@ import { View } from "react-native";
 import { TouchableOpacity } from "react-native";
 import { TextInput } from "react-native";
 import { router } from 'expo-router';
-import supabase from '@/src/lib/supabaseClient';
+import {supabase} from '@/src/lib/supabase';
 import { Text } from "react-native";
+
 export default function SignUp() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: 'https://your-app-url.com/auth/callback',
-        },
-      });
+    // try {
+    //   setIsLoading(true);
+    //   const { data, error } = await supabase.auth.signInWithOAuth({
+    //     provider: 'google',
+    //     options: {
+    //       redirectTo: 'https://your-app-url.com/auth/callback',
+    //     },
+    //   });
 
-      if (error) throw error;
-      Alert.alert('Success', 'Google sign-in successful!');
-    } catch (error) {
-      console.error('Google sign-in error:', error);
-      Alert.alert('Error', 'Failed to sign in with Google');
-    } finally {
-      setIsLoading(false);
-    }
+    //   if (error) throw error;
+    //   Alert.alert('Success', 'Google sign-in successful!');
+    // } catch (error) {
+    //   console.error('Google sign-in error:', error);
+    //   Alert.alert('Error', 'Failed to sign in with Google');
+    // } finally {
+    //   setIsLoading(false);
+    // }
   };
 
-  const handleContinue = async (name: string, phone: string) => {
+  const handleContinue = (name: string, phone: string) => {
     if (!name || !phone) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
-    }
-    console.log('Phone:', phone);
-    console.log('Name:', name);
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase.auth.signInWithOtp({
-        phone: phone,
-      })
-      if (error) throw error;
-      console.log('Data:', data);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setIsLoading(false);
     }
     // Navigate to OTP screen with user info
     router.push({
@@ -104,6 +91,6 @@ export default function SignUp() {
       <TouchableOpacity onPress={handleSignIn}>
         <Text className="text-blue-500">Sign In</Text>
       </TouchableOpacity>
-    </View>
-  );
+   </View>
+);
 };

@@ -1,4 +1,4 @@
-import supabase from "../supabaseClient";
+import { supabase } from "../supabase";
 /*
  add new user to db
  */
