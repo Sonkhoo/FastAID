@@ -1,8 +1,6 @@
 import {
-  Hospital as HospitalIcon,
   MapPin,
-  Navigation,
-  Truck
+  Navigation
 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
@@ -14,6 +12,7 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import BookingModal from '../../components/BookingModal';
 import MapContainer from '../../components/Map';
 import { getETAForAmbulance, getNearestAmbulance, getNearestHospital, type Hospital } from '../../lib/api/maps';
 import { getUserLocation } from '../../lib/services/location';
@@ -43,6 +42,9 @@ export default function MapScreen() {
   const [nearbyHospitals, setNearbyHospitals] = useState<Hospital[]>([]);
   const [loading, setLoading] = useState(true);
   const [hospitalsLoading, setHospitalsLoading] = useState(false);
+  
+  // Booking modal state
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   // Fetch user location and nearest ambulance on component mount
   useEffect(() => {
@@ -177,23 +179,27 @@ export default function MapScreen() {
             <Text className="text-white font-semibold">Your Location</Text>
           </View>
           
-          {/* Ambulance markers */}
+          {/* Ambulance markers
           <View className="absolute top-1/4 left-1/3 bg-accent-500 p-2 rounded-full">
-            <Truck color="white" size={16} />
+            <Truck color="red" size={16} />
           </View>
           <View className="absolute top-1/2 right-1/4 bg-accent-500 p-2 rounded-full">
-            <Truck color="white" size={16} />
+            <Truck color="red" size={16} />
           </View>
           
           {/* Hospital marker */}
-          <View className="absolute top-1/3 right-1/3 bg-secondary-500 p-2 rounded-full">
-            <HospitalIcon color="white" size={16} />
-          </View>
-        </View>
+          {/* <View className="absolute top-1/3 right-1/3 bg-secondary-500 p-2 rounded-full">
+            <HospitalIcon color="red" size={16} />
+          </View> */}
+        </View> 
 
         {/* Location Controls */}
         <View className="flex-row px-6 mt-4 space-x-3">
-          <TouchableOpacity className="flex-1 bg-red-500 py-3 rounded-xl">
+          <TouchableOpacity className="flex-1 bg-red-500 py-3 rounded-xl" onPress={() => {
+            if (nearbyAmbulances.length > 0 && nearbyHospitals.length > 0) {
+              setShowBookingModal(true);
+            }
+          }}>
             <Text className="text-white font-bold text-center">Book Nearest Ambulance</Text>
           </TouchableOpacity>
           <TouchableOpacity className="bg-white border border-gray-300 px-4 py-3 rounded-xl">
@@ -299,6 +305,41 @@ export default function MapScreen() {
           )}
         </View>
       </ScrollView>
+      
+      {/* Booking Modal */}
+      {nearbyAmbulances.length > 0 && nearbyHospitals.length > 0 && (
+        <BookingModal
+          visible={showBookingModal}
+          onClose={() => setShowBookingModal(false)}
+          driver={{
+            id: nearbyAmbulances[0].id,
+            name: nearbyAmbulances[0].driver,
+            phone: "+1234567890",
+            rating: 4.8,
+            experience: "5 years",
+            vehicleNumber: "AMB001",
+            vehicleType: "Ambulance"
+          }}
+          hospital={{
+            id: nearbyHospitals[0].id,
+            name: nearbyHospitals[0].name,
+            distance: nearbyHospitals[0].distanceText,
+            speciality: nearbyHospitals[0].speciality,
+            emergency: nearbyHospitals[0].emergency,
+            phone: nearbyHospitals[0].phone,
+            location: nearbyHospitals[0].location
+          }}
+          estimatedTime={nearbyAmbulances[0].eta}
+          estimatedCost="$45.00"
+          onConfirmBooking={() => {
+            console.log('Booking confirmed');
+            // Add booking logic here
+          }}
+          onCancel={() => {
+            console.log('Booking cancelled');
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
