@@ -185,7 +185,7 @@ export default function BookingModal({
 }: BookingModalProps) {
   const { user, session } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
-
+  
   // Simple mock payment function
   const handleMockPayment = async (bookingResponse: any) => {
     return new Promise<PaymentResponse>((resolve) => {
@@ -253,7 +253,7 @@ export default function BookingModal({
                 driverId: driver.id,
                 hospital: hospital.location,
                 estimatedCost: parseFloat(estimatedCost.replace('$', '')),
-                estimatedTime: estimatedTime
+                estimatedTime: estimatedTime,
               });
 
               // Configure Razorpay options
@@ -377,7 +377,9 @@ export default function BookingModal({
         <View className="bg-white px-6 py-4 border-b border-gray-200">
           <View className="flex-row items-center justify-between">
             <View className="flex-1">
-              <Text className="text-xl font-bold text-gray-900">Confirm Booking</Text>
+              <Text className="text-xl font-bold text-gray-900">
+                Confirm Booking
+              </Text>
               <Text className="text-xs text-blue-600 font-medium">💳 Mock payment available</Text>
             </View>
             <TouchableOpacity onPress={onClose} className="p-2">
@@ -386,7 +388,7 @@ export default function BookingModal({
           </View>
         </View>
 
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1">
           {/* Driver Profile Section */}
           <View className="bg-white mx-6 mt-6 rounded-2xl shadow-sm">
             <View className="p-6">
@@ -408,7 +410,7 @@ export default function BookingModal({
                 </View>
               </View>
 
-              <View className="space-y-3">
+              <View className="space-y-2">
                 {driver.phone && (
                   <View className="flex-row items-center">
                     <Phone color="#6B7280" size={16} />
@@ -434,7 +436,7 @@ export default function BookingModal({
           </View>
 
           {/* Hospital Details Section */}
-          <View className="bg-white mx-6 mt-4 rounded-2xl shadow-sm">
+          <View className="bg-white mx-6 mt-6 rounded-2xl shadow-sm">
             <View className="p-6">
               <Text className="text-lg font-bold text-gray-900 mb-4">Destination Hospital</Text>
               
@@ -466,7 +468,7 @@ export default function BookingModal({
           </View>
 
           {/* Trip Details Section */}
-          <View className="bg-white mx-6 mt-4 rounded-2xl shadow-sm">
+          <View className="bg-white mx-6 mt-6 rounded-2xl shadow-sm">
             <View className="p-6">
               <Text className="text-lg font-bold text-gray-900 mb-4">Trip Details</Text>
               
@@ -491,7 +493,7 @@ export default function BookingModal({
           </View>
 
           {/* Payment Method Section */}
-          <View className="bg-white mx-6 mt-4 rounded-2xl shadow-sm">
+          <View className="bg-white mx-6 mt-6 rounded-2xl shadow-sm">
             <View className="p-6">
               <Text className="text-lg font-bold text-gray-900 mb-4">Payment Method</Text>
               

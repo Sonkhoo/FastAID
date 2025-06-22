@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import '../../../global.css';
+import MedicalRecords from '../../components/MedicalRecords';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateUserLocation } from '../../lib/api/location';
 import { getETAForAmbulance, getNearestAmbulance } from '../../lib/api/maps';
@@ -44,6 +45,7 @@ export default function Dashboard() {
     });
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [showMedicalRecords, setShowMedicalRecords] = useState(false);
 
     const recentBookings = [
         {
@@ -171,18 +173,18 @@ export default function Dashboard() {
           // Step 1: Request permission
           const status = await requestLocationPermission();
           const location = await getUserLocation(status);
-  
+
           if (!location) {
             Alert.alert('Location not available', 'Please enable location services and try again.');
             return;
           }
-  
+
           const { latitude, longitude } = location;
-  
+
           // Step 2: Update user location
           const updatedUser = await updateUserLocation(latitude, longitude);
           console.log('User location updated successfully in database:', updatedUser);
-  
+
           // Step 3: Get nearest ambulance
           console.log(`Searching for ambulances near lat: ${latitude}, long: ${longitude}`);
           const ambulance = await getNearestAmbulance(latitude, longitude);
@@ -193,7 +195,7 @@ export default function Dashboard() {
           console.log('Nearest ambulance:', ambulance);
 
           const eta = await getETAForAmbulance({lat: latitude, lng: longitude}, { lat: 22.654885900941647, lng: 88.37130670753086});
-  
+
           // Step 4: Set nearest ambulance
           setNearestAmbulance(ambulance as unknown as Ambulance);
 
@@ -209,6 +211,19 @@ export default function Dashboard() {
           Alert.alert('Error', 'Something went wrong. Please try again later.');
         }
       };
+
+    const handleSchedulePress = () => {
+      Alert.alert(
+        'Schedule Ambulance',
+        'Scheduling functionality is coming soon! For now, please use the emergency booking option.',
+        [
+          {
+            text: 'OK',
+            style: 'default'
+          }
+        ]
+      );
+    };
 
     return (
       <SafeAreaView className="flex-1 bg-gray-50">
@@ -290,8 +305,12 @@ export default function Dashboard() {
                   onPress={() => {
                     if (action.title === 'Emergency Booking') {
                       handleEmergencyPress();
+                    } else if (action.title === 'Schedule Ambulance') {
+                      handleSchedulePress();
                     } else if (action.title === 'Find Hospital') {
                       router.push('/map');
+                    } else if (action.title === 'Medical Records') {
+                      setShowMedicalRecords(true);
                     }
                     // Add other actions as needed
                   }}
@@ -306,8 +325,14 @@ export default function Dashboard() {
             </View>
           </View>
         </ScrollView>
+
+        {/* Medical Records Modal */}
+        <MedicalRecords
+          visible={showMedicalRecords}
+          onClose={() => setShowMedicalRecords(false)}
+        />
       </SafeAreaView>
-  );
+    );
 };
 
 

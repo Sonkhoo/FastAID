@@ -10,6 +10,7 @@ FastAid is a React Native mobile application built with Expo that connects users
 - ⏱️ **ETA Calculation**: Real-time estimated arrival times for emergency vehicles
 - 📍 **Location Services**: GPS-based location tracking and geocoding
 - 🔐 **User Authentication**: Secure user registration and login system
+- 📅 **Ambulance Scheduling**: Schedule ambulances in advance for non-emergency medical transport
 - 📱 **Cross-platform**: Works on both iOS and Android devices
 
 ## Tech Stack
@@ -140,6 +141,50 @@ fastaid/
 - `getRouteToAmbulance(userLocation, ambulanceLocation)`: Get optimized route
 - `getETAForAmbulance(userLocation, ambulanceLocation)`: Calculate arrival time
 - `getAddressFromCoordinates(latitude, longitude)`: Reverse geocoding
+
+### Booking API (`src/lib/api/booking.ts`)
+
+- `createBookingOrder(bookingData)`: Create a new ambulance booking (emergency or scheduled)
+- `updateBookingPaymentStatus(bookingId, paymentId, status)`: Update payment status
+- `getBookingDetails(bookingId)`: Retrieve booking information
+- `updateDriverAvailability(driverId, isAvailable)`: Update driver availability
+
+## Scheduling Feature
+
+The app now supports scheduling ambulances in advance for non-emergency medical transport:
+
+### How to Schedule an Ambulance
+
+1. **From Dashboard**: Tap "Schedule Ambulance" in the Quick Actions section
+2. **From Map**: Tap "Schedule Ambulance" button on the map screen
+3. **Enter Details**: 
+   - Select date (YYYY-MM-DD format)
+   - Select time (HH:MM format)
+   - Review driver and hospital details
+4. **Confirm Booking**: Complete the booking with payment
+
+### Scheduling Features
+
+- **Advance Booking**: Schedule up to 30 days in advance
+- **Flexible Timing**: Choose any available time slot
+- **Driver Assignment**: Automatic assignment of available drivers
+- **Hospital Selection**: Automatic selection of nearest appropriate hospital
+- **Payment Integration**: Secure payment processing for scheduled bookings
+- **Booking Management**: View and manage scheduled bookings in the Bookings tab
+
+### Booking Types
+
+- **Emergency**: Immediate ambulance dispatch for urgent situations
+- **Scheduled**: Pre-arranged ambulance service for planned medical transport
+- **Regular**: Standard ambulance booking without specific scheduling
+
+### Database Schema
+
+The booking system supports both emergency and scheduled bookings with the following fields:
+- `isScheduled`: Boolean flag indicating scheduled booking
+- `scheduledDate`: Date for scheduled pickup (YYYY-MM-DD)
+- `scheduledTime`: Time for scheduled pickup (HH:MM)
+- `bookingStatus`: Status tracking (pending, confirmed, scheduled, in_progress, completed, cancelled)
 
 ## Contributing
 

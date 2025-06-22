@@ -1,12 +1,21 @@
-import { AppState } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createClient, processLock } from '@supabase/supabase-js'
+import { AppState } from 'react-native'
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://gfqlmgtpfwakwzysomuc.supabase.co'
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_API_KEY
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+
+// Debug logging to help identify configuration issues
+console.log('Supabase Configuration:');
+console.log('- URL:', supabaseUrl);
+console.log('- API Key:', supabaseAnonKey ? 'Set' : 'Missing');
+
+if (!supabaseAnonKey) {
+  console.error('Missing Supabase API key. Please set EXPO_PUBLIC_SUPABASE_API_KEY in your environment variables.');
+  console.error('You can get your API key from: https://app.supabase.com/project/_/settings/api');
+  throw new Error('Missing Supabase API key environment variable. Please check the console for setup instructions.');
 }
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: AsyncStorage,

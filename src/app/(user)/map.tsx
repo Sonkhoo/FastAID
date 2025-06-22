@@ -363,7 +363,9 @@ export default function MapScreen() {
       {nearbyAmbulances.length > 0 && nearbyHospitals.length > 0 && (
         <BookingModal
           visible={showBookingModal}
-          onClose={() => setShowBookingModal(false)}
+          onClose={() => {
+            setShowBookingModal(false);
+          }}
           driver={{
             id: nearbyAmbulances[0].id,
             name: nearbyAmbulances[0].driver,
@@ -386,11 +388,13 @@ export default function MapScreen() {
           estimatedCost="$45.00"
           onConfirmBooking={() => {
             console.log('Booking confirmed');
+            setShowBookingModal(false);
             // Refresh ambulance list to show only available drivers
             refreshAmbulanceList();
           }}
           onCancel={() => {
             console.log('Booking cancelled');
+            setShowBookingModal(false);
           }}
         />
       )}
