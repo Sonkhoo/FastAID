@@ -5,7 +5,7 @@ import React, {
   useEffect,
   useState
 } from 'react';
-import { getCurrentUserProfile } from '../lib/api/user';
+import { checkIfUserIsDriver, getCurrentUserProfile } from '../lib/api/user';
 import { supabase } from '../lib/supabase';
 
 interface User {
@@ -20,6 +20,7 @@ interface User {
 interface AuthContextType {
   session: Session | null;
   user: User | null;
+  isDriver: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -38,6 +39,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [isDriver, setIsDriver] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const checkUserInDatabase = async () => {
@@ -46,9 +48,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userData = await getCurrentUserProfile();
       console.log('User data from database:', userData);
       setUser(userData);
+      
+      // Check if user is a driver
+      if (userData?.phoneNumber) {
+        const driverStatus = await checkIfUserIsDriver(userData.phoneNumber);
+        setIsDriver(driverStatus);
+        console.log('User is driver:', driverStatus);
+      } else {
+        setIsDriver(false);
+      }
     } catch (error) {
       console.error('Error checking user in database:', error);
       setUser(null);
+      setIsDriver(false);
     } finally {
       setLoading(false);
     }
@@ -105,6 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = {
     session,
     user,
+    isDriver,
     loading,
     signOut,
     refreshUser,

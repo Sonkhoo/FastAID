@@ -3,7 +3,7 @@ import { ActivityIndicator, View } from "react-native";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 
 function RootLayoutNav() {
-  const { session, user, loading } = useAuth();
+  const { session, user, isDriver, loading } = useAuth();
 
   if (loading) {
     return (
@@ -17,7 +17,13 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerShown: false }}>
       {session && user ? (
         // User is authenticated and exists in database
-        <Stack.Screen name="(user)" />
+        isDriver ? (
+          // User is a driver
+          <Stack.Screen name="(driver)" />
+        ) : (
+          // User is a regular user
+          <Stack.Screen name="(user)" />
+        )
       ) : (
        // User is not authenticated or doesn't exist in database
         <Stack.Screen name="(auth)" />

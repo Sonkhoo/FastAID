@@ -8,7 +8,7 @@ import { Redirect, Stack, useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const { session, user, loading } = useAuth();
+  const { session, user, isDriver, loading } = useAuth();
   const router = useRouter();
 
   // As soon as we have both session + user, send them to /
@@ -22,6 +22,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   // If you want a declarative version instead of useEffect, you can do:
   if (!loading && session && user) {
     return <Redirect href="./(user)/" />;
+  }
+
+  if(isDriver && !loading && session && user) {
+    return <Redirect href="./(driver)/" />;
   }
 
   return (

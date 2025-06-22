@@ -478,3 +478,46 @@ export const uploadFile = async (file: any, fileName?: string) => {
     return null;
   }
 };
+
+export const checkIfUserIsDriver = async (phoneNumber: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('Driver')
+      .select('id')
+      .eq('phoneNumber', phoneNumber)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned - user is not a driver
+        return false;
+      }
+      throw error;
+    }
+
+    return !!data; // Return true if driver exists
+  } catch (error) {
+    console.error('Error checking if user is driver:', error);
+    return false;
+  }
+};
+
+export const getCurrentDriverProfile = async (): Promise<any> => {
+  try {
+    const { data, error } = await supabase
+      .from('Driver')
+      .select('*')
+      .eq('phoneNumber', (await supabase.auth.getUser()).data.user?.phone)
+      .single();
+
+    if (error) {
+      console.error('Error getting current driver profile:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error getting current driver profile:', error);
+    return null;
+  }
+};

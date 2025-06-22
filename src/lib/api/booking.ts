@@ -199,3 +199,142 @@ export async function updateDriverAvailability(driverId: string, isAvailable: bo
     throw error;
   }
 }
+
+// Get pending bookings for a specific driver
+export async function getPendingBookingsForDriver(driverId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('Booking')
+      .select(`
+        id,
+        created_at,
+        estimatedCost,
+        estimatedTime,
+        bookingStatus,
+        userId,
+        hospital,
+        User (
+          id,
+          name,
+          phoneNumber
+        )
+      `)
+      .eq('driverId', driverId)
+      .eq('bookingStatus', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to fetch pending bookings: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching pending bookings:', error);
+    throw error;
+  }
+}
+
+// Get driver's booking history
+export async function getDriverBookingHistory(driverId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('Booking')
+      .select(`
+        id,
+        created_at,
+        estimatedCost,
+        estimatedTime,
+        bookingStatus,
+        paymentStatus,
+        userId,
+        hospital,
+        User (
+          id,
+          name,
+          phoneNumber
+        )
+      `)
+      .eq('driverId', driverId)
+      .neq('bookingStatus', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to fetch booking history: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching booking history:', error);
+    throw error;
+  }
+}
+
+// Accept a booking request
+export async function acceptBooking(bookingId: string, driverId: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('Booking')
+      .update({
+        bookingStatus: 'accepted',
+        driverId: driverId
+      })
+      .eq('id', bookingId);
+
+    if (error) {
+      throw new Error(`Failed to accept booking: ${error.message}`);
+    }
+
+    // Update driver availability to false (busy)
+    await updateDriverAvailability(driverId, false);
+    
+    console.log(`Booking ${bookingId} accepted by driver ${driverId}`);
+  } catch (error) {
+    console.error('Error accepting booking:', error);
+    throw error;
+  }
+}
+
+// Reject a booking request
+export async function rejectBooking(bookingId: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('Booking')
+      .update({
+        bookingStatus: 'rejected'
+      })
+      .eq('id', bookingId);
+
+    if (error) {
+      throw new Error(`Failed to reject booking: ${error.message}`);
+    }
+    
+    console.log(`Booking ${bookingId} rejected`);
+  } catch (error) {
+    console.error('Error rejecting booking:', error);
+    throw error;
+  }
+}
+
+// Complete a booking
+export async function completeBooking(bookingId: string, driverId: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('Booking')
+      .update({
+        bookingStatus: 'completed'
+      })
+      .eq('id', bookingId);
+
+    if (error) {
+      throw new Error(`Failed to complete booking: ${error.message}`);
+    }
+
+    // Update driver availability to true (available again)
+    await updateDriverAvailability(driverId, true);
+    
+    console.log(`Booking ${bookingId} completed by driver ${driverId}`);
+  } catch (error) {
+    console.error('Error completing booking:', error);
+    throw error;
+  }
+}
