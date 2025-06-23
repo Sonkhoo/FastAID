@@ -1,7 +1,9 @@
+import { router } from 'expo-router';
 import {
   AlertCircle,
   CheckCircle,
   DollarSign,
+  LogOut,
   MapPin,
   Navigation,
   User,
@@ -88,10 +90,8 @@ export default function DriverDashboard() {
           latitude: driverProfile.latitude || 22.654885900941647,
           longitude: driverProfile.longitude || 88.37130670753086,
         });
-      }
 
-      // Get pending bookings
-      if (driverProfile?.id) {
+        // Get pending bookings
         const pending = await getPendingBookingsForDriver(driverProfile.id);
         const transformedPending = pending.map((booking: any) => ({
           ...booking,
@@ -105,9 +105,18 @@ export default function DriverDashboard() {
           User: Array.isArray(booking.User) ? booking.User[0] : booking.User
         }));
         setBookingHistory(transformedHistory as Booking[]);
+      } else {
+        // No driver profile found - this shouldn't happen for authenticated drivers
+        console.log('No driver profile found - user may not be a driver');
+        setDriver(null);
+        setPendingBookings([]);
+        setBookingHistory([]);
       }
     } catch (error) {
       console.error('Error fetching driver data:', error);
+      setDriver(null);
+      setPendingBookings([]);
+      setBookingHistory([]);
     } finally {
       setLoading(false);
     }
@@ -203,6 +212,44 @@ export default function DriverDashboard() {
     setRefreshing(true);
     await fetchDriverData();
     setRefreshing(false);
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Set driver offline before logout (if driver profile exists)
+              if (driver?.id) {
+                try {
+                  await updateDriverAvailability(driver.id, false);
+                } catch (availabilityError) {
+                  console.error('Error updating driver availability during logout:', availabilityError);
+                  // Continue with logout even if availability update fails
+                }
+              }
+              
+              // Sign out from auth
+              await supabase.auth.signOut();
+              router.replace('./(auth)/');
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Calculate total earnings
@@ -341,6 +388,12 @@ export default function DriverDashboard() {
             onValueChange={handleOnlineToggle}
             value={isOnline}
           />
+          <TouchableOpacity 
+            className="ml-3 p-2 rounded-full bg-gray-100"
+            onPress={handleLogout}
+          >
+            <LogOut size={20} color="#dc2626" />
+          </TouchableOpacity>
         </View>
       </View>
 

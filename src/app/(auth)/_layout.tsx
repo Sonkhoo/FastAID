@@ -20,12 +20,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 //   }, [loading, session, user]);
 
   // If you want a declarative version instead of useEffect, you can do:
-  if (!loading && session && user) {
-    return <Redirect href="./(user)/" />;
-  }
+
 
   if(isDriver && !loading && session && user) {
     return <Redirect href="./(driver)/" />;
+  }
+
+  if (!loading && session && user) {
+    return <Redirect href="./(user)/" />;
   }
 
   return (

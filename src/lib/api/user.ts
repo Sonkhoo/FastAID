@@ -504,13 +504,24 @@ export const checkIfUserIsDriver = async (phoneNumber: string): Promise<boolean>
 
 export const getCurrentDriverProfile = async (): Promise<any> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.phone) {
+      console.error('No authenticated user or phone number');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('Driver')
       .select('*')
-      .eq('phoneNumber', (await supabase.auth.getUser()).data.user?.phone)
+      .eq('phoneNumber', user.phone)
       .single();
 
     if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned - driver doesn't exist
+        console.log('No driver profile found for phone:', user.phone);
+        return null;
+      }
       console.error('Error getting current driver profile:', error);
       return null;
     }
